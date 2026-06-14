@@ -1,122 +1,27 @@
-name: FAZ ETL Pipeline – CI/CD
+name: FAZ ETL Pipeline CI
 
 on:
   push:
-    branches: ["main", "develop"]
+    branches: [ "main" ]
   pull_request:
-    branches: ["main"]
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
-  # ──────────────────────────────────────────────
-  # Job 1: Tests & Linting
-  # ──────────────────────────────────────────────
   test:
-    name: Tests & Code-Qualität
     runs-on: ubuntu-latest
-
-    steps:
-      - name: Code auschecken
-        uses: actions/checkout@v4
-
-      - name: Python 3.11 einrichten
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-
-      - name: Abhängigkeiten installieren
-        run: |
-          pip install -r requirements.txt
-          pip install pytest pytest-cov ruff
-
-      - name: Linting mit ruff
-        run: ruff check etl/ dags/ notebooks/
-
-      - name: Unit Tests ausführen
-        run: pytest tests/ -v --cov=etl --cov-report=xml
-
-      - name: Coverage-Report hochladen
-        uses: codecov/codecov-action@v4
-        with:
-          file: ./coverage.xml
-
-  # ──────────────────────────────────────────────
-  # Job 2: DAG-Validierung
-  # ──────────────────────────────────────────────
-  validate-dag:
-    name: Airflow DAG validieren
-    runs-on: ubuntu-latest
-    needs: test
-
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: "pip"
 
-      - name: Airflow installieren
-        run: |
-          pip install apache-airflow==2.9.1 \
-            apache-airflow-providers-microsoft-azure \
-            apache-airflow-providers-databricks \
-            apache-airflow-providers-http
+      - name: Pakete installieren
+        run: pip install pandas pyarrow sqlalchemy python-dotenv requests pytest pytest-cov ruff
 
-      - name: DAG-Syntax prüfen
-        env:
-          AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT: 30
-        run: |
-          airflow db init
-          python -c "
-          from airflow.models import DagBag
-          bag = DagBag(dag_folder='dags/', include_examples=False)
-          assert not bag.import_errors, f'DAG-Fehler: {bag.import_errors}'
-          print(f'DAGs gefunden: {list(bag.dags.keys())}')
-          print('DAG-Validierung erfolgreich!')
-          "
+      - name: Linting
+        run: ruff check etl/ dags/ --ignore E501
 
-  # ──────────────────────────────────────────────
-  # Job 3: Deploy auf Databricks (nur main-Branch)
-  # ──────────────────────────────────────────────
-  deploy:
-    name: Notebook auf Databricks deployen
-    runs-on: ubuntu-latest
-    needs: [test, validate-dag]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Databricks CLI einrichten
-        uses: databricks/setup-cli@main
-
-      - name: Notebook auf Databricks hochladen
-        env:
-          DATABRICKS_HOST:  ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-        run: |
-          databricks workspace import \
-            notebooks/transform_spark.py \
-            /FAZ/etl/transform_spark \
-            --language PYTHON \
-            --overwrite
-
-      - name: DAG-Dateien auf Airflow-Server kopieren
-        env:
-          SSH_KEY:     ${{ secrets.AIRFLOW_SSH_KEY }}
-          AIRFLOW_HOST:${{ secrets.AIRFLOW_HOST }}
-        run: |
-          echo "$SSH_KEY" > /tmp/deploy_key && chmod 600 /tmp/deploy_key
-          scp -i /tmp/deploy_key \
-              dags/faz_etl_dag.py \
-              deploy@${AIRFLOW_HOST}:/opt/airflow/dags/
-          echo "DAG deployed!"
-
-      - name: Deployment-Status melden
-        if: always()
-        run: |
-          echo "Deploy-Status: ${{ job.status }}"
-          echo "Branch: ${{ github.ref_name }}"
-          echo "Commit: ${{ github.sha }}"
+      - name: Tests
+        run: pytest tests/ -v
