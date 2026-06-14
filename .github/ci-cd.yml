@@ -2,9 +2,10 @@ name: FAZ ETL Pipeline – CI/CD
 
 on:
   push:
-    branches: [main, develop]
+    branches: ["main", "develop"]
   pull_request:
-    branches: [main]
+    branches: ["main"]
+  workflow_dispatch:
 
 jobs:
   # ──────────────────────────────────────────────
