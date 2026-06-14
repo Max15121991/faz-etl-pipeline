@@ -200,4 +200,4 @@ Faktentabellen wachsen unbegrenzt und werden nur erweitert.
 
 ## Lizenz
 
-MIT – freie Nutzung zu Lern- und Portfoliozwecken.
+MIT – freie Nutzung zu Lern- und Portfoliozwecken.# trigger CI
