@@ -18,7 +18,7 @@ jobs:
           python-version: "3.11"
 
       - name: Pakete installieren
-        run: pip install pandas pyarrow sqlalchemy python-dotenv requests pytest pytest-cov ruff
+        run: pip install pandas pyarrow sqlalchemy psycopg2-binary python-dotenv requests pytest pytest-cov ruff
 
       - name: Linting
         run: ruff check etl/ dags/ --ignore E501,F841
