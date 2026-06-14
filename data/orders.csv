@@ -1,0 +1,4 @@
+order_id,customer_id,amount,quantity,order_date,channel
+O001,C1,49.99,1,2024-01-15,Web
+O002,C2,199.00,2,2024-01-15,App
+O003,C3,1500.00,5,2024-01-15,Web
