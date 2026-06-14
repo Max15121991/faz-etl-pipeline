@@ -26,10 +26,8 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.microsoft.azure.hooks.wasb import WasbHook
-from airflow.providers.microsoft.azure.hooks.azure_data_factory import AzureDataFactoryHook
 from airflow.providers.databricks.operators.databricks import DatabricksRunNowOperator
 from airflow.providers.http.operators.http import SimpleHttpOperator
-from airflow.providers.microsoft.azure.transfers.local_to_wasb import LocalFilesystemToWasbOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 
@@ -289,8 +287,8 @@ with DAG(
             notebook_params={
                 "run_date": "{{ ds }}",
                 "adls_container": ADLS_CONTAINER,
-                "input_path": f"staging/{{{{ ds }}}}",
-                "output_path": f"processed/{{{{ ds }}}}",
+                "input_path": "staging/{{ ds }}",
+                "output_path": "processed/{{ ds }}",
             },
         )
 
